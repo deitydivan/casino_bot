@@ -1,4 +1,5 @@
 from email import message_from_string
+from pickle import TRUE
 from random import random
 from telegram import InputFile
 from config import dp, bot
@@ -47,21 +48,52 @@ async def hl_button(callback_query: types.CallbackQuery, state=None):
 
 async def take_bid_hl(message: types.Message, state=FSMHL.bid):
     global Bid
+    global name_card
     Bid = message.text
     if int(Bid) >= Ybalance:
         await bot.send_message(message.from_user.id, 'На вашем балансе недостаточно средств')
         await state.finish()
     else:
-        photo = open('D:/myprog/casino/img/2h.png')
+        ID = message.from_user.id
+        rec = sqlite_db.cur.execute('SELECT * FROM users').fetchall()
+        for row in rec:
+            if int(ID) == int(row[1]):
+                name_card = str(row[3])
+                break
+        photo = open('img/'+name_card+'.png', 'rb')
+        await bot.send_photo(chat_id=message.chat.id, photo=photo)
         await bot.send_message(message.from_user.id, 'Выберите на что хотите поставить', reply_markup=kb.inline_kb_hl)
-        await bot.send_photo(message.from_user.id, photo)
         await state.finish()
+
+# @dp.callback_query_handler(lambda c: c.data == 'high')
+async def high_button(callback_query: types.CallbackQuery,):
+    global Ybalance
+    rec = sqlite_db.cur.execute('SELECT * FROM users').fetchall()
+    for row in rec:
+        if int(ID) == int(row[1]):
+            Ybalance = int(row[2])
+            break
+    if Ybalance >= 0 and int(Bid) <= Ybalance:
+        numberOfCard = (random.randint(6, 14))
+        suitOfCard = random.choice(['d', 'c', 'p', 'h'])
+        name_card2 = str(numberOfCard) + suitOfCard
+        print(name_card2)
+        if name_card2 > name_card:
+            print('true')
+        else:
+            print('false')
+    else:
+        await bot.send_message(callback_query.from_user.id, 'на вашем балансе недостаточно средств')
+
+
+
 
 # @dp.message_handler(commands=['test'], state = none)
 
 
 async def test(message: types.Message):
-    photo = open('D:/myprog/casino/img/2c.png', 'rb')
+    name_card = '2c'
+    photo = open('img/'+name_card+'.png', 'rb')
     await bot.send_photo(chat_id=message.chat.id, photo=photo)
 
 
@@ -98,3 +130,5 @@ def register_handlers_client_hl(dp: Dispatcher):
     dp.register_message_handler(foto_name, state=FSMCards.name)
     dp.register_callback_query_handler(
         hl_button, lambda c: c.data == 'hl')
+    dp.register_callback_query_handler(
+        high_button, lambda c: c.data == 'high')
