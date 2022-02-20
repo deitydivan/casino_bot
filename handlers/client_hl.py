@@ -1,5 +1,6 @@
 from email import message_from_string
 from pickle import TRUE
+from posixpath import split
 from random import random
 from telegram import InputFile
 from config import dp, bot
@@ -66,6 +67,8 @@ async def take_bid_hl(message: types.Message, state=FSMHL.bid):
         await state.finish()
 
 # @dp.callback_query_handler(lambda c: c.data == 'high')
+
+
 async def high_button(callback_query: types.CallbackQuery,):
     global Ybalance
     rec = sqlite_db.cur.execute('SELECT * FROM users').fetchall()
@@ -76,16 +79,59 @@ async def high_button(callback_query: types.CallbackQuery,):
     if Ybalance >= 0 and int(Bid) <= Ybalance:
         numberOfCard = (random.randint(6, 14))
         suitOfCard = random.choice(['d', 'c', 'p', 'h'])
-        name_card2 = str(numberOfCard) + suitOfCard
-        print(name_card2)
-        if name_card2 > name_card:
-            print('true')
+        name_card2 = str(numberOfCard) + ' ' + suitOfCard
+        x = name_card.split()
+        y = name_card2.split()
+        if int(y[0]) > int(x[0]):
+            await sqlite_db.sql_update_last_card(name_card2, callback_query.from_user.id)
+            photo = open('img/'+name_card2+'.png', 'rb')
+            await bot.send_photo(chat_id=callback_query.from_user.id, photo=photo)
+            Ybalance += int(Bid)
+            await sqlite_db.sql_update_balance(Ybalance, callback_query.from_user.id)
+            await bot.send_message(callback_query.from_user.id, 'поздравляю вы выиграли!!!\nВаш баланс: ' + str(Ybalance))
         else:
-            print('false')
+            await sqlite_db.sql_update_last_card(name_card2, callback_query.from_user.id)
+            photo = open('img/'+name_card2+'.png', 'rb')
+            await bot.send_photo(chat_id=callback_query.from_user.id, photo=photo)
+            Ybalance -= int(Bid)
+            await sqlite_db.sql_update_balance(Ybalance, callback_query.from_user.id)
+            await bot.send_message(callback_query.from_user.id, 'к сожалению вы проиграли\nВаш баланс: ' + str(Ybalance))
     else:
         await bot.send_message(callback_query.from_user.id, 'на вашем балансе недостаточно средств')
 
 
+# @dp.callback_query_handler(lambda c: c.data == 'low')
+
+
+async def low_button(callback_query: types.CallbackQuery,):
+    global Ybalance
+    rec = sqlite_db.cur.execute('SELECT * FROM users').fetchall()
+    for row in rec:
+        if int(ID) == int(row[1]):
+            Ybalance = int(row[2])
+            break
+    if Ybalance >= 0 and int(Bid) <= Ybalance:
+        numberOfCard = (random.randint(6, 14))
+        suitOfCard = random.choice(['d', 'c', 'p', 'h'])
+        name_card2 = str(numberOfCard) + ' ' + suitOfCard
+        x = name_card.split()
+        y = name_card2.split()
+        if int(y[0]) < int(x[0]):
+            await sqlite_db.sql_update_last_card(name_card2, callback_query.from_user.id)
+            photo = open('img/'+name_card2+'.png', 'rb')
+            await bot.send_photo(chat_id=callback_query.from_user.id, photo=photo)
+            Ybalance += int(Bid)
+            await sqlite_db.sql_update_balance(Ybalance, callback_query.from_user.id)
+            await bot.send_message(callback_query.from_user.id, 'поздравляю вы выиграли!!!\nВаш баланс: ' + str(Ybalance))
+        else:
+            await sqlite_db.sql_update_last_card(name_card2, callback_query.from_user.id)
+            photo = open('img/'+name_card2+'.png', 'rb')
+            await bot.send_photo(chat_id=callback_query.from_user.id, photo=photo)
+            Ybalance -= int(Bid)
+            await sqlite_db.sql_update_balance(Ybalance, callback_query.from_user.id)
+            await bot.send_message(callback_query.from_user.id, 'к сожалению вы проиграли\nВаш баланс: ' + str(Ybalance))
+    else:
+        await bot.send_message(callback_query.from_user.id, 'на вашем балансе недостаточно средств')
 
 
 # @dp.message_handler(commands=['test'], state = none)
@@ -132,3 +178,5 @@ def register_handlers_client_hl(dp: Dispatcher):
         hl_button, lambda c: c.data == 'hl')
     dp.register_callback_query_handler(
         high_button, lambda c: c.data == 'high')
+    dp.register_callback_query_handler(
+        low_button, lambda c: c.data == 'low')

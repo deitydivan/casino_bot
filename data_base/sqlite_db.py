@@ -24,6 +24,12 @@ async def sql_update_name(name, ID):
     base.commit()
 
 
+async def sql_update_last_card(name_card2, ID):
+    data = (name_card2, ID)
+    cur.execute('UPDATE users set last_card = ? where userID = ?', data)
+    base.commit()
+
+
 async def sql_update_balance(balance, ID):
     data = (balance, ID)
     cur.execute('UPDATE users set balance = ? where userID = ?', data)

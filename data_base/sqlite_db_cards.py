@@ -18,3 +18,4 @@ async def sql_add_command_card(name, foto):
     base.commit()
 
 
+
